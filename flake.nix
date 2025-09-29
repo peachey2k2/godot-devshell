@@ -17,8 +17,8 @@
       
       _mono = if is_mono then "_mono" else "";
       godot-stable = pkgs.fetchurl {
-        url = "https://github.com/godotengine/godot-builds/releases/download/${version}/Godot_v${version}${_mono}_linux_x86_64.zip";
-        hash = "sha256-VncVcJptJMntaf3HgTRa9ELCMgptczZOph2kJ9o7RBo=";
+        url = "https://github.com/godotengine/godot-builds/releases/download/${version}/Godot_v${version}${_mono}_linux${if is_mono then "_" else "."}x86_64.zip";
+        hash = "sha256-xzFuH9eCrSdqTZhadnO1l26qqNkFYaK+pSiSENxT6bo=";
       };
       
 
@@ -47,7 +47,7 @@
 
       godot-unwrapped = pkgs.stdenv.mkDerivation {
         pname = "godot";
-        version = "4.5-rc1";
+        version = version;
 
         src = godot-stable;
         nativeBuildInputs = with pkgs; [unzip autoPatchelfHook];
@@ -63,10 +63,14 @@
         installPhase = ''
           mkdir -p $out/bin
           ls source
-          cp source/Godot_v${version}${_mono}_linux_x86_64/Godot_v${version}${_mono}_linux.x86_64 $out/bin/godot
+          ls source/Godot_v${version}${_mono}_linux${if is_mono then "_" else "."}x86_64
           ${if is_mono then /* sh */ ''
-            cp -r source/Godot_v${version}${_mono}_linux_x86_64/GodotSharp $out/bin/GodotSharp
-          '' else ""}
+            cp source/Godot_v${version}_mono_linux_x86_64/Godot_v${version}${_mono}_linux.x86_64 $out/bin/godot
+            cp -r source/Godot_v${version}_mono_linux_x86_64/GodotSharp $out/bin/GodotSharp
+          '' else /* sh */ ''
+            cp source/Godot_v${version}_linux.x86_64 $out/bin/godot
+            
+          ''}
         '';
       };
 
