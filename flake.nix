@@ -10,15 +10,20 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
 
-      # set up the version and and specify if it's mono
-      version = "4.5-rc1";
-      is_mono = true;
-
+      # set up the version and and specify if it's mono here
+      version = "3.4.2-stable";
+      is_mono = false;
       
-      _mono = if is_mono then "_mono" else "";
-      godot-stable = pkgs.fetchurl {
-        url = "https://github.com/godotengine/godot-builds/releases/download/${version}/Godot_v${version}${_mono}_linux${if is_mono then "_" else "."}x86_64.zip";
-        hash = "sha256-xzFuH9eCrSdqTZhadnO1l26qqNkFYaK+pSiSENxT6bo=";
+      major-ver = pkgs.lib.strings.toInt (builtins.substring 0 1 version);
+
+      my-godot = pkgs.fetchurl {
+        url = if major-ver == 4 then
+          "https://github.com/godotengine/godot-builds/releases/download/${version}/Godot_v${version}${if is_mono then "_mono" else ""}_linux${if is_mono then "_" else "."}x86_64.zip"
+        else
+          "https://github.com/godotengine/godot-builds/releases/download/${version}/Godot_v${version}${if is_mono then "_mono_x11_64" else "_x11.64"}.zip";
+
+        # you'll need to replace this :)
+        hash = "sha256-Ll+iK6cIXmJlW4pXV6LPCrG7IhzkNd2y3NMJOVOGJt0=";
       };
       
 
@@ -49,7 +54,7 @@
         pname = "godot";
         version = version;
 
-        src = godot-stable;
+        src = my-godot;
         nativeBuildInputs = with pkgs; [unzip autoPatchelfHook];
         buildInputs = buildInputs;
 
@@ -62,15 +67,18 @@
 
         installPhase = ''
           mkdir -p $out/bin
-          ls source
-          ls source/Godot_v${version}${_mono}_linux${if is_mono then "_" else "."}x86_64
-          ${if is_mono then /* sh */ ''
-            cp source/Godot_v${version}_mono_linux_x86_64/Godot_v${version}${_mono}_linux.x86_64 $out/bin/godot
-            cp -r source/Godot_v${version}_mono_linux_x86_64/GodotSharp $out/bin/GodotSharp
-          '' else /* sh */ ''
-            cp source/Godot_v${version}_linux.x86_64 $out/bin/godot
-            
-          ''}
+          ${
+            if major-ver == 4 then
+              if is_mono then /* sh */ ''
+                cp source/Godot_v${version}_mono_linux_x86_64/Godot_v${version}${if is_mono then "_mono" else ""}_linux.x86_64 $out/bin/godot
+                cp -r source/Godot_v${version}_mono_linux_x86_64/GodotSharp $out/bin/GodotSharp
+              '' else /* sh */ ''
+                cp source/Godot_v${version}_linux.x86_64 $out/bin/godot
+              ''
+            else /* sh */ ''
+              cp source/Godot_v${version}_${if is_mono then "mono_x11_64" else "x11.64"} $out/bin/godot
+            ''
+          }
         '';
       };
 
